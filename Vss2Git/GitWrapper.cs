@@ -209,6 +209,10 @@ namespace Hpdi.Vss2Git
                     args += " -m " + Quote(comment);
                 }
             }
+            else
+            {
+                args += " --allow-empty-message --no-edit -m \"\"";
+            }
         }
 
         private static string GetUtcTimeString(DateTime localTime)
