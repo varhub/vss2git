@@ -43,7 +43,7 @@ namespace Hpdi.Vss2Git
         private readonly StreamCopier streamCopier = new StreamCopier();
         private readonly HashSet<string> tagsUsed = new HashSet<string>();
 
-        private string emailDomain = "localhost";
+        private string emailDomain = "";
         public string EmailDomain
         {
             get { return emailDomain; }
@@ -698,7 +698,7 @@ namespace Hpdi.Vss2Git
                 return emailDictionary[user];
             }
             // if we can't find the user in the dictionary, we return an default email
-            return user + "@" + emailDomain;
+            return user + (emailDomain.Equals("") ? "" : "@" + emailDomain);
         }
 
         private string GetTagFromLabel(string label)
