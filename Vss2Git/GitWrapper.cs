@@ -103,13 +103,13 @@ namespace Hpdi.Vss2Git
 
         public override void RemoveFile(string path)
         {
-            VcsExec("rm -- " + QuoteRelativePath(path));
+            VcsExec("rm -f -- " + QuoteRelativePath(path));
             SetNeedsCommit();
         }
 
         public override void RemoveDir(string path, bool recursive)
         {
-            VcsExec("rm " + (recursive ? "-r -f " : "") + "-- " + QuoteRelativePath(path));
+            VcsExec("rm " + (recursive ? "-r -f " : "-f ") + "-- " + QuoteRelativePath(path));
             SetNeedsCommit();
         }
 
