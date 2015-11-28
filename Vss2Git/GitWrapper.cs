@@ -58,6 +58,11 @@ namespace Hpdi.Vss2Git
             this.forceAnnotatedTags = forceAnnotatedTags;
         }
 
+        public override string QuoteRelativePath(string path)
+        {
+            return base.QuoteRelativePath(path).Replace('\\', '/'); // cygwin git compatibility
+        }
+
         public override void Init(bool resetRepo)
         {
             if (resetRepo)

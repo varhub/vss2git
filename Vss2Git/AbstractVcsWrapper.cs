@@ -285,7 +285,7 @@ namespace Hpdi.Vss2Git
             return false;
         }
 
-        public string QuoteRelativePath(string path)
+        public virtual string QuoteRelativePath(string path)
         {
             if (path.StartsWith(outputDirectory))
             {
