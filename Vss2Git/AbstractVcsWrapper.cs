@@ -218,34 +218,25 @@ namespace Hpdi.Vss2Git
                 using (var process = Process.Start(startInfo))
                 {
                     process.StandardInput.Close();
-                    var stdoutReader = new AsyncLineReader(process.StandardOutput.BaseStream);
-                    var stderrReader = new AsyncLineReader(process.StandardError.BaseStream);
-
-                    var activityEvent = new ManualResetEvent(false);
-                    EventHandler activityHandler = delegate { activityEvent.Set(); };
-                    process.Exited += activityHandler;
-                    stdoutReader.DataReceived += activityHandler;
-                    stderrReader.DataReceived += activityHandler;
-
                     var stdoutBuffer = new StringBuilder();
                     var stderrBuffer = new StringBuilder();
-                    while (true)
+                    process.OutputDataReceived += new DataReceivedEventHandler((s, e) =>
                     {
-                        activityEvent.Reset();
-                        while(appendBuffer(stdoutBuffer, stdoutReader, '>'));
-                        while(appendBuffer(stderrBuffer, stderrReader, '!'));
-
-                        if (process.HasExited)
-                        {
-                            break;
-                        }
-
-                        activityEvent.WaitOne(200);
-                    }
-                    Thread.Sleep(50);
-                    while (appendBuffer(stdoutBuffer, stdoutReader, '>')) ;
-                    while (appendBuffer(stderrBuffer, stderrReader, '!')) ;
-
+                        if (e.Data == null || e.Data == "")
+                            return;
+                        stdoutBuffer.AppendLine(e.Data);
+                        Logger.WriteLine('>' + e.Data);
+                    });
+                    process.ErrorDataReceived += new DataReceivedEventHandler((s, e) =>
+                    {
+                        if (e.Data == null || e.Data == "")
+                            return;
+                        stdoutBuffer.AppendLine(e.Data);
+                        Logger.WriteLine('!' + e.Data);
+                    });
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    process.WaitForExit();
                     stdout = stdoutBuffer.ToString();
                     stderr = stderrBuffer.ToString();
                     return process.ExitCode;
@@ -265,24 +256,6 @@ namespace Hpdi.Vss2Git
             {
                 Stopwatch.Stop();
             }
-        }
-
-        public bool appendBuffer(StringBuilder buffer, AsyncLineReader reader, char prefix)
-        {
-            string line = reader.ReadLine();
-            if (line != null)
-            {
-                line = line.TrimEnd();
-                if (buffer.Length > 0)
-                {
-                    buffer.AppendLine();
-                }
-                buffer.Append(line);
-                Logger.Write('>');
-                Logger.WriteLine(line);
-                return true;
-            }
-            return false;
         }
 
         public virtual string QuoteRelativePath(string path)
