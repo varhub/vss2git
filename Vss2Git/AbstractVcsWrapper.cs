@@ -384,7 +384,7 @@ namespace Hpdi.Vss2Git
         {
             if (!needsCommit) return false;
             needsCommit = false;
-            return DoCommit(authorEmail, authorEmail, comment, localTime);
+            return DoCommit(authorName, authorEmail, comment, localTime);
         }
 
         protected virtual void CheckOutputDirectory()

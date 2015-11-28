@@ -39,6 +39,7 @@ namespace Hpdi.Vss2Git
         private readonly RevisionAnalyzer revisionAnalyzer;
         private readonly ChangesetBuilder changesetBuilder;
         private readonly IVcsWrapper vcsWrapper;
+        private readonly IDictionary<string, string> usernameDictionary;
         private readonly IDictionary<string, string> emailDictionary;
         private readonly StreamCopier streamCopier = new StreamCopier();
         private readonly HashSet<string> tagsUsed = new HashSet<string>();
@@ -66,14 +67,28 @@ namespace Hpdi.Vss2Git
 
         public VcsExporter(WorkQueue workQueue, Logger logger,
             RevisionAnalyzer revisionAnalyzer, ChangesetBuilder changesetBuilder,
-            IVcsWrapper vcsWrapper, IDictionary<string, string> emailDictionary)
+            IVcsWrapper vcsWrapper, IDictionary<string, string> usersmap)
             : base(workQueue, logger)
         {
             this.database = revisionAnalyzer.Database;
             this.revisionAnalyzer = revisionAnalyzer;
             this.changesetBuilder = changesetBuilder;
             this.vcsWrapper = vcsWrapper;
-            this.emailDictionary = emailDictionary;
+            this.emailDictionary = new Dictionary<string, string>();
+            this.usernameDictionary = new Dictionary<string, string>();
+            Regex emailRegex = new Regex("\\s*(\\S.*?)\\s*<(.+)>\\s*");
+            foreach (var e in usersmap)
+            {
+                string key = e.Key.ToLower();
+                string email = e.Value;
+                Match m = emailRegex.Match(e.Value);
+                if (m.Success)
+                {
+                    this.usernameDictionary.Add(key, m.Groups[1].Value);
+                    email = m.Groups[2].Value;
+                }
+                this.emailDictionary.Add(key, m.Groups[2].Value);
+            }
         }
 
         public void ExportToVcs(string repoPath)
@@ -638,7 +653,7 @@ namespace Hpdi.Vss2Git
             AbortRetryIgnore(delegate
             {
                 result = vcsWrapper.AddAll() &&
-                    vcsWrapper.Commit(changeset.User, GetEmail(changeset.User),
+                    vcsWrapper.Commit(GetUsername(changeset.User), GetEmail(changeset.User),
                     changeset.Comment ?? DefaultComment, changeset.DateTime);
             });
             return result;
@@ -689,16 +704,28 @@ namespace Hpdi.Vss2Git
             return false;
         }
 
+        private string GetUsername(string user)
+        {
+            // keys to the dictionary: user name in lower case, blanks replaced by dots
+            user = user.ToLower();
+            if (usernameDictionary != null && usernameDictionary.ContainsKey(user))
+            {
+                return usernameDictionary[user];
+            }
+            // if we can't find the user in the dictionary, we use the user name as-is
+            return user;
+        }
+
         private string GetEmail(string user)
         {
             // keys to the dictionary: user name in lower case, blanks replaced by dots
-            user = user.ToLower().Replace(' ', '.');
+            user = user.ToLower();
             if (emailDictionary != null && emailDictionary.ContainsKey(user))
             {
                 return emailDictionary[user];
             }
-            // if we can't find the user in the dictionary, we return an default email
-            return user + (emailDomain.Equals("") ? "" : "@" + emailDomain);
+            // if we can't find the user in the dictionary, we generate the email from the username
+            return emailDomain.Equals("") ? user : user.Replace(' ', '.') + "@" + emailDomain;
         }
 
         private string GetTagFromLabel(string label)
