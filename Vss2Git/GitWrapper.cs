@@ -32,6 +32,9 @@ namespace Hpdi.Vss2Git
         public static readonly string gitMetaDir = ".git";
         public static readonly string gitExecutable = "git";
 
+        private List<String> addQueue = new List<string>();
+        private List<String> deleteQueue = new List<string>();
+
         private Encoding commitEncoding = Encoding.UTF8;
 
         public Encoding CommitEncoding
@@ -77,7 +80,13 @@ namespace Hpdi.Vss2Git
 
         public override bool Add(string path)
         {
-            var startInfo = GetStartInfo("add -- " + QuoteRelativePath(path));
+            addQueue.Add(path);
+            return true;
+        }
+
+        private bool DoAdd(string paths)
+        {
+            var startInfo = GetStartInfo("add --" + paths);
 
             // add fails if there are no files (directories don't count)
             bool result = ExecuteUnless(startInfo, "did not match any files");
@@ -85,10 +94,35 @@ namespace Hpdi.Vss2Git
             return result;
         }
 
+        private bool DoAdds()
+        {
+            bool rc = false;
+            string paths = "";
+            foreach (string path in addQueue)
+            {
+                if (paths.Length > 8000)
+                {
+                    rc |= DoAdd(paths);
+                    paths = "";
+                }
+                paths += " " + QuoteRelativePath(path);
+            }
+            addQueue.Clear();
+            if (paths.Length > 1)
+                rc |= DoAdd(paths);
+            return rc;
+        }
+
         public override bool AddDir(string path)
         {
             // do nothing - git does not care about directories
             return true;
+        }
+        public override bool NeedsCommit()
+        {
+            DoAdds();
+            DoDeletes();
+            return base.NeedsCommit();
         }
 
         public override bool AddAll()
@@ -103,8 +137,30 @@ namespace Hpdi.Vss2Git
 
         public override void RemoveFile(string path)
         {
-            VcsExec("rm -f -- " + QuoteRelativePath(path));
+            deleteQueue.Add(path);
             SetNeedsCommit();
+        }
+
+        private void DoDelete(string paths)
+        {
+            VcsExec("rm -f --" + paths);
+        }
+
+        private void DoDeletes()
+        {
+            string paths = "";
+            foreach (string path in deleteQueue)
+            {
+                if (paths.Length > 8000)
+                {
+                    DoDelete(paths);
+                    paths = "";
+                }
+                paths += " " + QuoteRelativePath(path);
+            }
+            deleteQueue.Clear();
+            if (paths.Length > 1)
+                DoDelete(paths);
         }
 
         public override void RemoveDir(string path, bool recursive)

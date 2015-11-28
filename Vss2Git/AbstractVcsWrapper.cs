@@ -389,7 +389,7 @@ namespace Hpdi.Vss2Git
                 exec, args, stdout, stderr);
         }
 
-        public bool NeedsCommit()
+        public virtual bool NeedsCommit()
         {
             return needsCommit;
         }
