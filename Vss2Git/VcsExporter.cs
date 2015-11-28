@@ -76,18 +76,20 @@ namespace Hpdi.Vss2Git
             this.vcsWrapper = vcsWrapper;
             this.emailDictionary = new Dictionary<string, string>();
             this.usernameDictionary = new Dictionary<string, string>();
-            Regex emailRegex = new Regex("\\s*(\\S.*?)\\s*<(.+)>\\s*");
+            Regex emailRegex = new Regex("(\\S.*?)\\s*<(.+)>");
             foreach (var e in usersmap)
             {
                 string key = e.Key.ToLower();
-                string email = e.Value;
-                Match m = emailRegex.Match(e.Value);
+                string email = e.Value.Trim();
+                if (email == "")
+                    continue;
+                Match m = emailRegex.Match(email);
                 if (m.Success)
                 {
                     this.usernameDictionary.Add(key, m.Groups[1].Value);
                     email = m.Groups[2].Value;
                 }
-                this.emailDictionary.Add(key, m.Groups[2].Value);
+                this.emailDictionary.Add(key, email);
             }
         }
 

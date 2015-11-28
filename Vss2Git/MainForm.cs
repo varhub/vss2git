@@ -477,6 +477,58 @@ namespace Hpdi.Vss2Git
             return dictionary;
         }
 
+        private void DumpUsers()
+        {
+            var df = new VssDatabaseFactory(vssDirTextBox.Text);
+            var db = df.Open();
+            var path = vssProjectTextBox.Text;
+            VssProject project;
+            try
+            {
+                project = db.GetItem(path) as VssProject;
+            }
+            catch (VssPathException ex)
+            {
+                MessageBox.Show(ex.Message, "Invalid project path",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            if (project == null)
+            {
+                MessageBox.Show(path + " is not a project", "Invalid project path",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            var emailDictionary = ReadDictionaryFile("e-mail dictionary", db.BasePath, "emails.properties");
+
+            revisionAnalyzer = new RevisionAnalyzer(workQueue, logger, db);
+            if (!string.IsNullOrEmpty(excludeTextBox.Text))
+            {
+                revisionAnalyzer.ExcludeFiles = excludeTextBox.Text;
+            }
+            revisionAnalyzer.AddItem(project);
+            workQueue.AddLast(delegate (object work)
+            {
+                foreach (var dateEntry in revisionAnalyzer.SortedRevisions)
+                {
+                    foreach (Revision revision in dateEntry.Value)
+                    {
+                        var user = revision.User.ToLower();
+                        if (emailDictionary.ContainsKey(user))
+                            continue;
+                        emailDictionary.Add(user, "");
+                    }
+                }
+                string propsPath = db.BasePath + Path.DirectorySeparatorChar + "emails.properties";
+                WriteDictionaryFile(emailDictionary, propsPath);
+                MessageBox.Show("The list of usernames is written to:\n\n"
+                    + propsPath + "\n\n"
+                    + "Please edit it and fill in email addresses in the form:\n\n"
+                    + "username = Full Name <e-mail>\n\nor\n\nusername = e-mail", "User-email mapping",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            });
+        }
+
         private void svnStandardLayoutCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             bool enabled = !svnStandardLayoutCheckBox.Checked;
@@ -521,6 +573,11 @@ namespace Hpdi.Vss2Git
         private void loadSettingsButton_Click(object sender, EventArgs e)
         {
             LoadSettings();
+        }
+
+        private void emailMap_Click(object sender, EventArgs e)
+        {
+            DumpUsers();
         }
     }
 }

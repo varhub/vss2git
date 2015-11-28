@@ -94,6 +94,7 @@
             this.settingsSaveFileDialog = new System.Windows.Forms.SaveFileDialog();
             this.saveSettingsButton = new System.Windows.Forms.Button();
             this.loadSettingsButton = new System.Windows.Forms.Button();
+            this.emailMap = new System.Windows.Forms.Button();
             this.vssGroupBox.SuspendLayout();
             this.statusStrip.SuspendLayout();
             this.outputGroupBox.SuspendLayout();
@@ -710,6 +711,16 @@
             this.loadSettingsButton.UseVisualStyleBackColor = true;
             this.loadSettingsButton.Click += new System.EventHandler(this.loadSettingsButton_Click);
             // 
+            // emailMap
+            // 
+            this.emailMap.Location = new System.Drawing.Point(191, 545);
+            this.emailMap.Name = "emailMap";
+            this.emailMap.Size = new System.Drawing.Size(136, 23);
+            this.emailMap.TabIndex = 8;
+            this.emailMap.Text = "User-email mapping...";
+            this.emailMap.UseVisualStyleBackColor = true;
+            this.emailMap.Click += new System.EventHandler(this.emailMap_Click);
+            // 
             // MainForm
             // 
             this.AcceptButton = this.goButton;
@@ -717,6 +728,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.cancelButton;
             this.ClientSize = new System.Drawing.Size(584, 598);
+            this.Controls.Add(this.emailMap);
             this.Controls.Add(this.loadSettingsButton);
             this.Controls.Add(this.saveSettingsButton);
             this.Controls.Add(this.changesetGroupBox);
@@ -818,7 +830,7 @@
         private System.Windows.Forms.SaveFileDialog settingsSaveFileDialog;
         private System.Windows.Forms.Button saveSettingsButton;
         private System.Windows.Forms.Button loadSettingsButton;
-
+        private System.Windows.Forms.Button emailMap;
     }
 }
 
