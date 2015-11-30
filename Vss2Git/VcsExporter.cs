@@ -206,6 +206,7 @@ namespace Hpdi.Vss2Git
                     try
                     {
                         ReplayChangeset(pathMapper, changeset, labels);
+                        vcsWrapper.NeedsCommit(); // to flush outstanding adds/deletes
                     }
                     finally
                     {
