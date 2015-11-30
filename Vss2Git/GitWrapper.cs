@@ -80,6 +80,7 @@ namespace Hpdi.Vss2Git
             {
                 SetConfig("i18n.commitencoding", commitEncoding.WebName);
             }
+            SetConfig("core.ignorecase", "true");
             CheckOutputDirectory();
         }
 
