@@ -34,6 +34,7 @@ namespace Hpdi.Vss2Git
 
         private List<String> addQueue = new List<string>();
         private List<String> deleteQueue = new List<string>();
+        private List<String> dirDeleteQueue = new List<string>();
 
         private Encoding commitEncoding = Encoding.UTF8;
 
@@ -167,11 +168,22 @@ namespace Hpdi.Vss2Git
             deleteQueue.Clear();
             if (paths.Length > 1)
                 DoDelete(paths);
+            CleanupEmptyDirs();
+        }
+        private void CleanupEmptyDirs()
+        {
+            foreach (string dir in dirDeleteQueue)
+            {
+                if (Directory.Exists(dir))
+                    Directory.Delete(dir, true);
+            }
+            dirDeleteQueue.Clear();
         }
 
         public override void RemoveDir(string path, bool recursive)
         {
             deleteQueue.Add(path); // is always recursive
+            dirDeleteQueue.Add(path);
             SetNeedsCommit();
         }
 
