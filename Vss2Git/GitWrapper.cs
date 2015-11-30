@@ -148,7 +148,7 @@ namespace Hpdi.Vss2Git
 
         private void DoDelete(string paths)
         {
-            VcsExec("rm -f --" + paths);
+            VcsExec("rm -r -f --" + paths); // is always recursive
         }
 
         private void DoDeletes()
@@ -170,7 +170,7 @@ namespace Hpdi.Vss2Git
 
         public override void RemoveDir(string path, bool recursive)
         {
-            VcsExec("rm " + (recursive ? "-r -f " : "-f ") + "-- " + QuoteRelativePath(path));
+            deleteQueue.Add(path); // is always recursive
             SetNeedsCommit();
         }
 
