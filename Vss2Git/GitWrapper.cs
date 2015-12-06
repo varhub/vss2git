@@ -319,7 +319,7 @@ namespace Hpdi.Vss2Git
                             return dt;
                         }
                     }
-                } catch (Exception e)
+                } catch (Exception )
                 {
                 }
             }

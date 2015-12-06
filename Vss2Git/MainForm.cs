@@ -286,6 +286,10 @@ namespace Hpdi.Vss2Git
                 description = string.Format("CP{0} - {1}", codePage, encoding.DisplayName);
                 var index = encodingComboBox.Items.Add(description);
                 codePages[index] = encoding;
+                if (codePage == 65001)
+                {
+                    encodingComboBox.SelectedIndex = index;
+                }
                 if (codePage == defaultCodePage)
                 {
                     codePages[defaultIndex] = encoding;
@@ -407,7 +411,7 @@ namespace Hpdi.Vss2Git
             domainTextBox.Text = settings.DefaultEmailDomain;
             logTextBox.Text = settings.LogFile;
             transcodeCheckBox.Checked = settings.TranscodeComments;
-            resetRepoCheckBox.Checked = settings.ResetRepo;
+            resetRepoCheckBox.Checked = settings.ResetRepo || settings.ContinueSync;
             forceAnnotatedCheckBox.Checked = settings.ForceAnnotatedTags;
             anyCommentUpDown.Value = settings.AnyCommentSeconds;
             sameCommentUpDown.Value = settings.SameCommentSeconds;
@@ -444,6 +448,7 @@ namespace Hpdi.Vss2Git
             settings.LogFile = logTextBox.Text;
             settings.TranscodeComments = transcodeCheckBox.Checked;
             settings.ResetRepo = resetRepoCheckBox.Checked;
+            settings.ContinueSync = continueSyncCheckBox.Checked;
             settings.ForceAnnotatedTags = forceAnnotatedCheckBox.Checked;
             settings.AnyCommentSeconds = (int)anyCommentUpDown.Value;
             settings.SameCommentSeconds = (int)sameCommentUpDown.Value;
