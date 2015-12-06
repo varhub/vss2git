@@ -21,6 +21,8 @@ using System.Windows.Forms;
 using Hpdi.VssLogicalLib;
 using System.IO;
 using System.Configuration;
+using System.Globalization;
+using System.Threading;
 
 namespace Hpdi.Vss2Git
 {
@@ -35,10 +37,14 @@ namespace Hpdi.Vss2Git
 
         private readonly Dictionary<int, EncodingInfo> codePages = new Dictionary<int, EncodingInfo>();
         private readonly WorkQueue workQueue = new WorkQueue(1);
+        private readonly WorkQueue backgroundQueue = new WorkQueue(1);
+
         private Logger logger = Logger.Null;
         private RevisionAnalyzer revisionAnalyzer;
         private ChangesetBuilder changesetBuilder;
         private string settingsFile;
+
+        private DateTime? continueAfter;
 
         public MainForm(string[] args)
         {
@@ -52,6 +58,35 @@ namespace Hpdi.Vss2Git
         private void OpenLog(string filename)
         {
             logger = string.IsNullOrEmpty(filename) ? Logger.Null : new Logger(filename);
+        }
+
+        private void LoadRepoSettings()
+        {
+            Invoke((MethodInvoker)delegate
+            {
+                IVcsWrapper vcsWrapper = outDirTextBox.Text.Length > 0 ? CreateVcsWrapper(Encoding.Default) : null;
+                backgroundQueue.AddLast(delegate
+                {
+                    continueAfter = vcsWrapper != null ? vcsWrapper.GetLastCommit() : null;
+                    Invoke((MethodInvoker)delegate
+                    {
+                        if (continueAfter == null)
+                        {
+                            if (continueSyncCheckBox.Checked)
+                                resetRepoCheckBox.Checked = true;
+                            continueSyncCheckBox.Enabled = continueSyncCheckBox.Checked = false;
+                        }
+                        else
+                        {
+                            resetRepoCheckBox.Checked = false;
+                            continueSyncCheckBox.Enabled = true;
+                            continueSyncCheckBox.Checked = true;
+                            continueSyncCheckBox.Text = "Continue sync from " + continueAfter;
+                        }
+
+                    });
+                });
+            });
         }
 
         private void goButton_Click(object sender, EventArgs e)
@@ -130,13 +165,14 @@ namespace Hpdi.Vss2Git
                         vcsExporter.CommitEncoding = encoding;
                     }
                     vcsExporter.ResetRepo = resetRepoCheckBox.Checked;
-                    vcsExporter.ExportToVcs(outDirTextBox.Text);
+                    vcsExporter.ExportToVcs(outDirTextBox.Text, continueAfter);
                 }
 
                 workQueue.Idle += delegate
                 {
                     logger.Dispose();
                     logger = Logger.Null;
+                    LoadRepoSettings();
                 };
 
                 statusTimer.Enabled = true;
@@ -206,6 +242,10 @@ namespace Hpdi.Vss2Git
                 changesetBuilder = null;
 
                 statusTimer.Enabled = false;
+                if (!goButton.Enabled)
+                {
+                    LoadRepoSettings();
+                }
                 goButton.Enabled = true;
                 cancelButton.Text = "Close";
             }
@@ -253,6 +293,7 @@ namespace Hpdi.Vss2Git
             }
 
             ReadSettings();
+            LoadRepoSettings();
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -578,6 +619,32 @@ namespace Hpdi.Vss2Git
         private void emailMap_Click(object sender, EventArgs e)
         {
             DumpUsers();
+        }
+
+        private void resetRepoCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (resetRepoCheckBox.Checked)
+            {
+                continueSyncCheckBox.Checked = false;
+            }
+        }
+
+        private void continueSyncCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (continueSyncCheckBox.Checked)
+            {
+                resetRepoCheckBox.Checked = false;
+            }
+        }
+
+        private void outDirTextBox_TextChanged(object sender, EventArgs e)
+        {
+            LoadRepoSettings();
+        }
+
+        private void vcsSetttingsTabs_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            LoadRepoSettings();
         }
     }
 }

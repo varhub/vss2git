@@ -49,6 +49,7 @@
             this.changeLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.timeLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.outputGroupBox = new System.Windows.Forms.GroupBox();
+            this.continueSyncCheckBox = new System.Windows.Forms.CheckBox();
             this.outDirButton = new System.Windows.Forms.Button();
             this.resetRepoCheckBox = new System.Windows.Forms.CheckBox();
             this.vcsSetttingsTabs = new System.Windows.Forms.TabControl();
@@ -275,6 +276,7 @@
             // 
             this.outputGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.outputGroupBox.Controls.Add(this.continueSyncCheckBox);
             this.outputGroupBox.Controls.Add(this.outDirButton);
             this.outputGroupBox.Controls.Add(this.resetRepoCheckBox);
             this.outputGroupBox.Controls.Add(this.vcsSetttingsTabs);
@@ -292,6 +294,17 @@
             this.outputGroupBox.TabIndex = 1;
             this.outputGroupBox.TabStop = false;
             this.outputGroupBox.Text = "Output Settings";
+            // 
+            // continueSyncCheckBox
+            // 
+            this.continueSyncCheckBox.AutoSize = true;
+            this.continueSyncCheckBox.Location = new System.Drawing.Point(306, 121);
+            this.continueSyncCheckBox.Name = "continueSyncCheckBox";
+            this.continueSyncCheckBox.Size = new System.Drawing.Size(183, 17);
+            this.continueSyncCheckBox.TabIndex = 11;
+            this.continueSyncCheckBox.Text = "Continue from last synced commit";
+            this.continueSyncCheckBox.UseVisualStyleBackColor = true;
+            this.continueSyncCheckBox.CheckedChanged += new System.EventHandler(this.continueSyncCheckBox_CheckedChanged);
             // 
             // outDirButton
             // 
@@ -314,6 +327,7 @@
             this.resetRepoCheckBox.TabIndex = 8;
             this.resetRepoCheckBox.Text = "Reset Repository before Export";
             this.resetRepoCheckBox.UseVisualStyleBackColor = true;
+            this.resetRepoCheckBox.CheckedChanged += new System.EventHandler(this.resetRepoCheckBox_CheckedChanged);
             // 
             // vcsSetttingsTabs
             // 
@@ -324,6 +338,7 @@
             this.vcsSetttingsTabs.SelectedIndex = 0;
             this.vcsSetttingsTabs.Size = new System.Drawing.Size(545, 159);
             this.vcsSetttingsTabs.TabIndex = 10;
+            this.vcsSetttingsTabs.SelectedIndexChanged += new System.EventHandler(this.vcsSetttingsTabs_SelectedIndexChanged);
             // 
             // tabPage1
             // 
@@ -554,6 +569,7 @@
             this.outDirTextBox.Name = "outDirTextBox";
             this.outDirTextBox.Size = new System.Drawing.Size(435, 20);
             this.outDirTextBox.TabIndex = 1;
+            this.outDirTextBox.TextChanged += new System.EventHandler(this.outDirTextBox_TextChanged);
             // 
             // outDirLabel
             // 
@@ -831,6 +847,7 @@
         private System.Windows.Forms.Button saveSettingsButton;
         private System.Windows.Forms.Button loadSettingsButton;
         private System.Windows.Forms.Button emailMap;
+        private System.Windows.Forms.CheckBox continueSyncCheckBox;
     }
 }
 

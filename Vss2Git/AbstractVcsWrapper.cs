@@ -387,25 +387,28 @@ namespace Hpdi.Vss2Git
             return DoCommit(authorName, authorEmail, comment, localTime);
         }
 
-        protected virtual void CheckOutputDirectory()
+        protected virtual void CheckOutputDirectory(bool newRepo)
         {
-            string[] files = Directory.GetFiles(outputDirectory);
-            string[] dirs = Directory.GetDirectories(outputDirectory);
-            if (files.Length > 0)
-            {
-                throw new ApplicationException("The output directory is not empty");
-            }
-            string metaDirSuffix = "\\" + metaDir;
-            foreach (string dir in dirs)
-            {
-                if (!dir.EndsWith(metaDirSuffix))
-                {
-                    throw new ApplicationException("The output directory is not empty");
-                }
-            }
             if (!Directory.Exists(Path.Combine(outputDirectory, metaDir)))
             {
                 throw new ApplicationException("The output directory does not contain the meta directory " + metaDir);
+            }
+            if (newRepo)
+            {
+                string[] files = Directory.GetFiles(outputDirectory);
+                string[] dirs = Directory.GetDirectories(outputDirectory);
+                if (files.Length > 0)
+                {
+                    throw new ApplicationException("The output directory is not empty");
+                }
+                string metaDirSuffix = "\\" + metaDir, metaDirSuffix2 = "/" + metaDir;
+                foreach (string dir in dirs)
+                {
+                    if (!dir.EndsWith(metaDirSuffix) && !dir.EndsWith(metaDirSuffix2))
+                    {
+                        throw new ApplicationException("The output directory is not empty");
+                    }
+                }
             }
         }
 
@@ -442,7 +445,7 @@ namespace Hpdi.Vss2Git
         }
 
         public abstract void Init(bool resetRepo);
-        public abstract void Configure();
+        public abstract void Configure(bool newRepo);
         public abstract bool Add(string path);
         public abstract bool AddDir(string path);
         public abstract bool AddAll();
@@ -453,5 +456,6 @@ namespace Hpdi.Vss2Git
         public abstract void MoveEmptyDir(string sourcePath, string destPath);
         public abstract bool DoCommit(string authorName, string authorEmail, string comment, DateTime localTime);
         public abstract void Tag(string name, string taggerName, string taggerEmail, string comment, DateTime localTime);
+        public abstract DateTime? GetLastCommit();
     }
 }

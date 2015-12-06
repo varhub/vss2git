@@ -30,7 +30,7 @@ namespace Hpdi.Vss2Git
         bool FindExecutable();
         void Init(bool resetRepo);
         void Exit();
-        void Configure();
+        void Configure(bool newRepo);
         bool Add(string path);
         bool AddDir(string path);
         bool AddAll();
@@ -41,5 +41,6 @@ namespace Hpdi.Vss2Git
         void MoveEmptyDir(string sourcePath, string destPath);
         bool Commit(string authorName, string authorEmail, string comment, DateTime localTime);
         void Tag(string name, string taggerName, string taggerEmail, string comment, DateTime localTime);
+        DateTime? GetLastCommit();
     }
 }

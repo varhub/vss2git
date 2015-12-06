@@ -84,13 +84,13 @@ namespace Hpdi.Vss2Git
             }
         }
 
-        public override void Configure()
+        public override void Configure(bool newRepo)
         {
             if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
             {
                 AddInitialArguments("--username " + username + " --password " + password);
             }
-            CheckOutputDirectory();
+            CheckOutputDirectory(newRepo);
         }
 
         public override bool Add(string path)
@@ -267,10 +267,10 @@ namespace Hpdi.Vss2Git
             Logger.WriteLine("svn branches URL is " + branchesUrl);
         }
 
-        protected override void CheckOutputDirectory()
+        protected override void CheckOutputDirectory(bool newRepo)
         {
             // check if the directory is initial, i.e. it is empty except for the meta directory .svn
-            base.CheckOutputDirectory();
+            base.CheckOutputDirectory(newRepo);
             // check if the checkout is to trunk
             var startInfo = GetStartInfo("info");
             string stdout;
@@ -339,5 +339,12 @@ namespace Hpdi.Vss2Git
                 throw new ApplicationException(svnMetaDir + " directory not present after checkout");
             }
         }
+
+        public override DateTime? GetLastCommit()
+        {
+            // SVN continue sync not implemented
+            return null;
+        }
+
     }
 }

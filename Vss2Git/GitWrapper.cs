@@ -19,6 +19,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace Hpdi.Vss2Git
@@ -71,18 +72,17 @@ namespace Hpdi.Vss2Git
                 DeleteDirectory(GetOutputDirectory());
                 Thread.Sleep(0);
                 Directory.CreateDirectory(GetOutputDirectory());
+                VcsExec("init");
             }
-            VcsExec("init");
         }
 
-        public override void Configure()
+        public override void Configure(bool newRepo)
         {
             if (commitEncoding.WebName != "utf-8")
             {
                 SetConfig("i18n.commitencoding", commitEncoding.WebName);
             }
-            SetConfig("core.ignorecase", "true");
-            CheckOutputDirectory();
+            CheckOutputDirectory(newRepo);
         }
 
         public override bool Add(string path)
@@ -297,5 +297,34 @@ namespace Hpdi.Vss2Git
             // format time according to ISO 8601 (avoiding locale-dependent month/day names)
             return utcTime.ToString("yyyy'-'MM'-'dd HH':'mm':'ss +0000");
         }
+
+        private static Regex lastCommitTimestampRegex = new Regex("^Date:\\s*(\\S+)", RegexOptions.Multiline);
+
+        public override DateTime? GetLastCommit()
+        {
+            if (Directory.Exists(Path.Combine(GetOutputDirectory(), gitMetaDir)) && FindExecutable())
+            {
+                try {
+                    var startInfo = GetStartInfo("log -n 1 --date=raw");
+                    string stdout, stderr;
+                    int exitCode = Execute(startInfo, out stdout, out stderr);
+                    if (exitCode == 0)
+                    {
+                        var m = lastCommitTimestampRegex.Match(stdout);
+                        if (m.Success)
+                        {
+                            long unixTimeStamp = long.Parse(m.Groups[1].Value);
+                            DateTime dt = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+                            dt = dt.AddSeconds(unixTimeStamp).ToLocalTime();
+                            return dt;
+                        }
+                    }
+                } catch (Exception e)
+                {
+                }
+            }
+            return null;
+        }
+
     }
 }
