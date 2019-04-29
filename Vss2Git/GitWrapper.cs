@@ -19,6 +19,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace Hpdi.Vss2Git
@@ -36,6 +37,7 @@ namespace Hpdi.Vss2Git
         private string gitInitialArguments = null;
         private bool shellQuoting = false;
         private Encoding commitEncoding = Encoding.UTF8;
+        private String gitMetaDir = ".git";
 
         public TimeSpan ElapsedTime
         {
@@ -250,6 +252,36 @@ namespace Hpdi.Vss2Git
 
                 ExecuteUnless(startInfo, null);
             }
+        }
+
+        private static Regex lastCommitTimestampRegex = new Regex("^Date:\\s*(\\S+)", RegexOptions.Multiline);
+
+        public DateTime GetLastCommitDate()
+        {
+            DateTime dt = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+            if (Directory.Exists(Path.Combine(this.repoPath, gitMetaDir)) && FindExecutable())
+            {
+                try
+                {
+                    var startInfo = GetStartInfo("log -n 1 --date=raw");
+                    string stdout, stderr;
+                    int exitCode = Execute(startInfo, out stdout, out stderr);
+                    if (exitCode == 0)
+                    {
+                        var m = lastCommitTimestampRegex.Match(stdout);
+                        if (m.Success)
+                        {
+                            long unixTimeStamp = long.Parse(m.Groups[1].Value);
+                            dt = dt.AddSeconds(unixTimeStamp).ToLocalTime();
+                            return dt;
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                }
+            }
+            return dt;
         }
 
         private static string GetUtcTimeString(DateTime localTime)

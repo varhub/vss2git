@@ -82,7 +82,7 @@ namespace Hpdi.Vss2Git
             this.changesetBuilder = changesetBuilder;
         }
 
-        public void ExportToGit(string repoPath)
+        public void ExportToGit(string repoPath, bool resumeImport=true)
         {
             workQueue.AddLast(delegate(object work)
             {
@@ -126,6 +126,12 @@ namespace Hpdi.Vss2Git
                     });
                 }
 
+                DateTime latestGitChangesetDate = git.GetLastCommitDate();
+                if (resumeImport)
+                {
+                    logger.WriteLine("Import will resume from '{0}'.", latestGitChangesetDate);
+                }
+
                 var pathMapper = new VssPathMapper();
 
                 // create mappings for root projects
@@ -152,6 +158,24 @@ namespace Hpdi.Vss2Git
                     LogStatus(work, "Replaying " + changesetDesc);
                     labels.Clear();
                     replayStopwatch.Start();
+
+                    if (resumeImport)
+                    {
+                        DateTime currentChangesetDate = new DateTime(changeset.DateTime.Year, changeset.DateTime.Month, changeset.DateTime.Day, changeset.DateTime.Hour, changeset.DateTime.Minute, changeset.DateTime.Second, 0, changeset.DateTime.Kind);
+                        if (currentChangesetDate <= latestGitChangesetDate)
+                        {
+                            logger.WriteLine("\tSkipped older changeset.");
+                            SkipChangeset(pathMapper, changeset);
+                            ++changesetId;
+                            continue;
+                        }
+                        else
+                        {
+                            logger.WriteLine("\tBEGIN import since this changeset {0} ({1}>{2})", changeset.DateTime, changeset.DateTime.ToLongDateString(), latestGitChangesetDate.ToLongDateString());
+                            resumeImport = false;
+                        }
+                    }
+
                     bool needCommit;
                     try
                     {
@@ -766,6 +790,118 @@ namespace Hpdi.Vss2Git
             else
             {
                 renamer(sourcePath, destPath);
+            }
+        }
+
+        private void SkipChangeset(VssPathMapper pathMapper, Changeset changeset)
+        {
+            foreach (Revision revision in changeset.Revisions)
+            {
+                if (workQueue.IsAborting)
+                {
+                    break;
+                }
+                SkipRevision(pathMapper, revision);
+            }
+        }
+
+        private void SkipRevision(VssPathMapper pathMapper, Revision revision)
+        {
+            var actionType = revision.Action.Type;
+            if (revision.Item.IsProject)
+            {
+                var project = revision.Item;
+                var projectPath = pathMapper.GetProjectPath(project.PhysicalName);
+
+                VssItemName target = null;
+                string targetPath = null;
+                var namedAction = revision.Action as VssNamedAction;
+                if (namedAction != null)
+                {
+                    target = namedAction.Name;
+                    if (projectPath != null)
+                    {
+                        targetPath = Path.Combine(projectPath, target.LogicalName);
+                    }
+                }
+
+                switch (actionType)
+                {
+                    case VssActionType.Add:
+                    case VssActionType.Share:
+                        pathMapper.AddItem(project, target);
+                        break;
+
+                    case VssActionType.Recover:
+                        pathMapper.RecoverItem(project, target);
+                        break;
+
+                    case VssActionType.Delete:
+                    case VssActionType.Destroy:
+                        pathMapper.DeleteItem(project, target);
+                        break;
+
+                    case VssActionType.Rename:
+                        pathMapper.RenameItem(target);
+                        break;
+
+                    case VssActionType.MoveFrom:
+                        {
+                            var moveFromAction = (VssMoveFromAction)revision.Action;
+                            var isInside = pathMapper.IsProjectRooted(moveFromAction.OriginalProject);
+
+                            if (isInside)
+                            {
+                                pathMapper.MoveProjectFrom(project, target, moveFromAction.OriginalProject);
+                            }
+                            else
+                            {
+                                pathMapper.RecoverItem(project, target);
+                            }
+                        }
+                        break;
+
+                    case VssActionType.MoveTo:
+                        {
+                            var moveToAction = (VssMoveToAction)revision.Action;
+                            var isInside = pathMapper.IsProjectRooted(moveToAction.NewProject);
+                            if (!isInside)
+                            {
+                                pathMapper.DeleteItem(project, target);
+                            }
+                        }
+                        break;
+
+                    case VssActionType.Pin:
+                        {
+                            var pinAction = (VssPinAction)revision.Action;
+                            if (pinAction.Pinned)
+                            {
+                                pathMapper.PinItem(project, target);
+                            }
+                            else
+                            {
+                                pathMapper.UnpinItem(project, target);
+                            }
+                        }
+                        break;
+
+                    case VssActionType.Branch:
+                        {
+                            var branchAction = (VssBranchAction)revision.Action;
+                            pathMapper.BranchFile(project, target, branchAction.Source);
+                        }
+                        break;
+
+                    case VssActionType.Restore:
+                        pathMapper.AddItem(project, target);
+                        break;
+                }
+            }
+            // item is a file, not a project
+            else if (actionType == VssActionType.Edit || actionType == VssActionType.Branch)
+            {
+                pathMapper.SetFileVersion(revision.Item, revision.Version);
             }
         }
     }
